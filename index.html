@@ -3,36 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PLN Full Scanner</title>
+    <title>PLN Full-Area Scanner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        /* Paksa Body & HTML tidak ada sisa ruang */
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        /* 1. Paksa layar Full mentok */
+        html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #000; overflow: hidden; position: fixed; }
         
-        /* Container Utama */
+        /* 2. Paksa Container Kamera Full Screen */
         #reader { 
-            position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; 
-            border: none !important; margin: 0 !important; padding: 0 !important;
-        }
-
-        /* INI KUNCINYA: Memaksa video kamera melebar buang warna hitam */
-        #reader video { 
+            position: fixed !important; top: 0 !important; left: 0 !important; 
             width: 100% !important; height: 100% !important; 
-            object-fit: cover !important; /* Menghilangkan bar hitam */
+            border: none !important; padding: 0 !important; margin: 0 !important;
         }
 
-        /* Matikan semua garis, kotak, dan teks bawaan library */
-        #reader__scan_region, #reader__scan_region img { display: none !important; border: none !important; }
-        #reader__dashboard { display: none !important; }
-        #reader__status_span { display: none !important; }
-        #reader__header_message { display: none !important; }
+        /* 3. PAKSA VIDEO MELEBAR (Menghilangkan Hitam-Hitam) */
+        #reader video { 
+            width: 100vw !important; height: 100vh !important; 
+            object-fit: cover !important; /* Ini yang bikin kamera penuh ke layar */
+        }
 
-        /* Tombol Batal Melayang */
+        /* 4. BUNUH SEMUA KOTAK (Putih, Biru, Garis) */
+        div[id^="reader__"] { display: none !important; border: none !important; background: none !important; }
+        #reader__scan_region { display: block !important; border: none !important; }
+        #reader__scan_region img { display: none !important; } /* Buang gambar laser/garis bawaan */
+        
+        /* 5. Tombol Batal yang nyaman di jempol */
         .btn-batal {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            padding: 15px 40px; background: rgba(255, 68, 68, 0.8); color: white;
-            border: none; border-radius: 50px; font-weight: bold; z-index: 999;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-size: 16px;
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            padding: 16px 50px; background: rgba(255, 0, 0, 0.8); color: white;
+            border: none; border-radius: 50px; font-weight: bold; z-index: 9999;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); font-size: 16px; text-transform: uppercase;
         }
     </style>
 </head>
@@ -42,12 +42,12 @@
     <button class="btn-batal" onclick="window.close()">KEMBALI</button>
 
 <script>
-    // Inisialisasi tanpa elemen UI otomatis
+    // verbose: false supaya tidak banyak log di konsol
     const html5QrCode = new Html5Qrcode("reader", { verbose: false });
 
     const config = { 
         fps: 25, 
-        // JANGAN isi qrbox, supaya dia scan seluruh sensor kamera
+        // JANGAN PAKAI qrbox! Biar dia scan SEISI LAYAR HP Boss.
         aspectRatio: window.innerHeight / window.innerWidth,
         disableFlip: false
     };
@@ -56,20 +56,17 @@
         if (navigator.vibrate) navigator.vibrate(100);
         window.opener.postMessage({ type: "HASIL_QR", data: decodedText }, "*");
         
-        html5QrCode.stop().then(() => {
-            window.close();
-        }).catch(() => {
-            window.close();
-        });
+        // Stop & Tutup
+        html5QrCode.stop().then(() => { window.close(); }).catch(() => { window.close(); });
     };
 
-    // Jalankan Kamera
+    // Mulai Scan
     html5QrCode.start(
         { facingMode: "environment" }, 
         config, 
         onScanSuccess
     ).catch((err) => {
-        console.error("Kamera Gagal:", err);
+        console.error("Gagal Kamera:", err);
     });
 </script>
 </body>
