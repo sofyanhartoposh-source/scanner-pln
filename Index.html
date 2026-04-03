@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner PLN Mobile</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { margin: 0; background: #121212; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        #reader { width: 100%; flex-grow: 1; }
+        .footer { padding: 20px; text-align: center; background: #1e1e1e; }
+        button { padding: 12px 25px; background: #ff4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 80%; }
+        h3 { margin: 10px 0; color: #00e5ff; }
+    </style>
+</head>
+<body>
+    <div class="footer"><h3>ARAHKAN KE QR CODE</h3></div>
+    <div id="reader"></div>
+    <div class="footer">
+        <button onclick="window.close()">BATAL / KEMBALI</button>
+    </div>
+
+    <script>
+        const html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            (decodedText) => {
+                if (window.opener) {
+                    // Kirim hasil ke Google Apps Script
+                    window.opener.postMessage({ type: 'HASIL_QR', data: decodedText }, "*");
+                    
+                    // Efek getar dan tutup otomatis
+                    if (navigator.vibrate) navigator.vibrate(100);
+                    setTimeout(() => { window.close(); }, 300);
+                } else {
+                    alert("Hasil: " + decodedText + " (Buka lewat aplikasi utama)");
+                }
+            }
+        ).catch(err => {
+            console.error(err);
+            document.body.innerHTML += `<p style="color:red; padding:20px;">Kamera Error: ${err}</p>`;
+        });
+    </script>
+</body>
+</html>
