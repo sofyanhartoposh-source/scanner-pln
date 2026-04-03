@@ -3,60 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner PLN Peka</title>
+    <title>Scanner PLN Mobile</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { margin: 0; background: #121212; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
-        #reader { width: 100%; flex-grow: 1; }
-        .footer { padding: 15px; text-align: center; background: #1e1e1e; border-top: 2px solid #00e5ff; }
-        button { padding: 12px 25px; background: #ff4444; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; }
-        h3 { margin: 0 0 10px 0; color: #00e5ff; font-size: 16px; text-transform: uppercase; }
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* Container kamera harus fleksibel */
+        #reader { width: 100% !important; flex-grow: 1; background: #000; }
+        
+        /* Menghilangkan border bawaan library yang bikin kotak aneh */
+        #reader__scan_region { border: none !important; }
+        #reader video { object-fit: cover !important; }
+
+        .footer { padding: 20px; text-align: center; background: #1a1a1a; border-top: 3px solid #00e5ff; }
+        button { padding: 15px; background: #ff4444; color: white; border: none; border-radius: 10px; font-weight: bold; width: 100%; font-size: 16px; }
+        h3 { margin: 0 0 10px 0; color: #00e5ff; font-size: 14px; letter-spacing: 1px; }
+        
+        /* Frame bantuan visual biar user tahu tengahnya di mana */
+        .guide-box {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%);
+            width: 250px; height: 250px; border: 2px solid rgba(0, 229, 255, 0.5);
+            border-radius: 15px; pointer-events: none; z-index: 99;
+        }
     </style>
 </head>
 <body>
 
-    <div id="reader"></div>
+    <div style="position: relative; flex-grow: 1; display: flex; flex-direction: column;">
+        <div id="reader"></div>
+        <div class="guide-box"></div>
+    </div>
 
     <div class="footer">
-        <h3>Arahkan ke QR Code</h3>
-        <button onclick="window.close()">BATAL / KEMBALI</button>
+        <h3>ARAHKAN QR KE TENGAH KOTAK</h3>
+        <button onclick="stopAndClose()">BATAL / KEMBALI</button>
     </div>
 
 <script>
-    // Konfigurasi agar kamera lebih peka
-    const config = { 
-        fps: 20,           // Lebih tinggi biar lebih cepat nangkep
-        qrbox: { width: 250, height: 250 }, // Area kotak scan
-        aspectRatio: 1.0   // Kotak presisi
-    };
-
     const html5QrCode = new Html5Qrcode("reader");
 
-    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-        // Jika berhasil scan:
-        // 1. Beri feedback getar (jika HP dukung)
-        if (navigator.vibrate) navigator.vibrate(100);
-
-        // 2. Kirim data ke Google Apps Script Boss
-        window.opener.postMessage({
-            type: "HASIL_QR",
-            data: decodedText
-        }, "*");
-
-        // 3. Tutup scanner
-        html5QrCode.stop().then(() => {
-            window.close();
-        });
+    const config = { 
+        fps: 15, 
+        // qrbox dihapus agar library mendeteksi di SELURUH area kamera (lebih peka)
+        // Kita pakai guide-box manual saja untuk bantuan mata user
+        aspectRatio: window.innerHeight > window.innerWidth ? 1.0 : 1.77 
     };
 
-    // Mulai kamera belakang (environment)
+    const qrCodeSuccessCallback = (decodedText) => {
+        if (navigator.vibrate) navigator.vibrate(80);
+        window.opener.postMessage({ type: "HASIL_QR", data: decodedText }, "*");
+        stopAndClose();
+    };
+
+    function stopAndClose() {
+        html5QrCode.stop().then(() => {
+            window.close();
+        }).catch(() => {
+            window.close();
+        });
+    }
+
+    // Jalankan kamera dengan settingan yang otomatis menyesuaikan layar
     html5QrCode.start(
         { facingMode: "environment" }, 
         config, 
         qrCodeSuccessCallback
     ).catch((err) => {
-        console.error("Gagal kamera: ", err);
-        alert("Kamera tidak diizinkan atau tidak ditemukan.");
+        alert("Izin Kamera Diperlukan");
     });
 </script>
 </body>
