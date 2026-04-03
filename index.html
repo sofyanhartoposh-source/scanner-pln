@@ -3,49 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PLN Wide Scanner</title>
+    <title>PLN Full Scanner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        /* Paksa Body & HTML tidak ada sisa ruang */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
         
-        /* Video memenuhi layar */
-        #reader { width: 100% !important; flex-grow: 1; background: #000; }
-        #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
+        /* Container Utama */
+        #reader { 
+            position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; 
+            border: none !important; margin: 0 !important; padding: 0 !important;
+        }
 
-        /* Menghilangkan elemen bawaan library yang mengganggu */
-        #reader__scan_region { border: none !important; }
+        /* INI KUNCINYA: Memaksa video kamera melebar buang warna hitam */
+        #reader video { 
+            width: 100% !important; height: 100% !important; 
+            object-fit: cover !important; /* Menghilangkan bar hitam */
+        }
+
+        /* Matikan semua garis, kotak, dan teks bawaan library */
+        #reader__scan_region, #reader__scan_region img { display: none !important; border: none !important; }
         #reader__dashboard { display: none !important; }
+        #reader__status_span { display: none !important; }
+        #reader__header_message { display: none !important; }
 
-        .footer { padding: 15px; text-align: center; background: #1a1a1a; border-top: 2px solid #00e5ff; z-index: 100; }
-        .btn-batal { padding: 15px; background: #ff4444; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; }
-        
-        /* Garis tipis transparan hanya untuk pemanis (opsional) */
-        .overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border: 20px solid rgba(0,0,0,0.2); pointer-events: none; box-sizing: border-box;
+        /* Tombol Batal Melayang */
+        .btn-batal {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            padding: 15px 40px; background: rgba(255, 68, 68, 0.8); color: white;
+            border: none; border-radius: 50px; font-weight: bold; z-index: 999;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-size: 16px;
         }
     </style>
 </head>
 <body>
 
-    <div style="position: relative; flex-grow: 1; display: flex;">
-        <div id="reader"></div>
-        <div class="overlay"></div>
-    </div>
-
-    <div class="footer">
-        <div style="margin-bottom: 10px; font-size: 12px; color: #00e5ff;">SCAN DI MANA SAJA DALAM LAYAR</div>
-        <button class="btn-batal" onclick="window.close()">KEMBALI</button>
-    </div>
+    <div id="reader"></div>
+    <button class="btn-batal" onclick="window.close()">KEMBALI</button>
 
 <script>
-    const html5QrCode = new Html5Qrcode("reader");
+    // Inisialisasi tanpa elemen UI otomatis
+    const html5QrCode = new Html5Qrcode("reader", { verbose: false });
 
-    // CONFIGURASI TANPA QRBOX
     const config = { 
-        fps: 20, 
-        // qrbox dihapus agar deteksi berlaku di seluruh area kamera
-        aspectRatio: window.innerHeight > window.innerWidth ? (window.innerWidth/window.innerHeight) : 1.77
+        fps: 25, 
+        // JANGAN isi qrbox, supaya dia scan seluruh sensor kamera
+        aspectRatio: window.innerHeight / window.innerWidth,
+        disableFlip: false
     };
 
     const onScanSuccess = (decodedText) => {
@@ -59,13 +63,13 @@
         });
     };
 
-    // Jalankan kamera langsung full area
+    // Jalankan Kamera
     html5QrCode.start(
         { facingMode: "environment" }, 
         config, 
         onScanSuccess
     ).catch((err) => {
-        console.error(err);
+        console.error("Kamera Gagal:", err);
     });
 </script>
 </body>
