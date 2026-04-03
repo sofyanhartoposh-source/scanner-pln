@@ -1,63 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner PLN Peka</title>
+    <title>PLN Scanner Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { margin: 0; background: #121212; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
-        #reader { width: 100%; flex-grow: 1; }
-        .footer { padding: 15px; text-align: center; background: #1e1e1e; border-top: 2px solid #00e5ff; }
-        button { padding: 12px 25px; background: #ff4444; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; }
-        h3 { margin: 0 0 10px 0; color: #00e5ff; font-size: 16px; text-transform: uppercase; }
+        :root { --primary: #00e5ff; --danger: #ff4444; --dark: #121212; }
+        body { margin: 0; background: var(--dark); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        /* Header Style */
+        .header { padding: 20px; text-align: center; background: rgba(30, 30, 30, 0.9); border-bottom: 2px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; }
+        .header h2 { margin: 0; font-size: 18px; letter-spacing: 2px; color: var(--primary); }
+        
+        /* Scanner Container */
+        #reader { width: 100% !important; flex-grow: 1; border: none !important; }
+        #reader__scan_region { background: var(--dark) !important; }
+        video { object-fit: cover !important; }
+
+        /* Custom Overlay Scanner */
+        .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px; border: 2px solid rgba(255,255,255,0.2); border-radius: 20px; pointer-events: none; z-index: 5; }
+        .scanner-overlay::before { content: ""; position: absolute; top: -5px; left: -5px; width: 30px; height: 30px; border-top: 5px solid var(--primary); border-left: 5px solid var(--primary); border-radius: 5px 0 0 0; }
+        .scanner-overlay::after { content: ""; position: absolute; bottom: -5px; right: -5px; width: 30px; height: 30px; border-bottom: 5px solid var(--primary); border-right: 5px solid var(--primary); border-radius: 0 0 5px 0; }
+        
+        /* Laser Animation */
+        .laser { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--primary); box-shadow: 0 0 15px var(--primary); animation: scan 2s infinite linear; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+        /* Footer Style */
+        .footer { padding: 20px; background: #1e1e1e; display: flex; gap: 10px; justify-content: center; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; text-transform: uppercase; font-size: 14px; }
+        .btn-cancel { background: #333; color: #999; }
+        .btn-cancel:hover { background: var(--danger); color: white; }
     </style>
 </head>
 <body>
 
-    <div id="reader"></div>
+    <div class="header">
+        <h2>SCANNER PLN MOBILE</h2>
+    </div>
+
+    <div style="position: relative; flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+        <div id="reader"></div>
+        <div class="scanner-overlay">
+            <div class="laser"></div>
+        </div>
+    </div>
 
     <div class="footer">
-        <h3>Arahkan ke QR Code</h3>
-        <button onclick="window.close()">BATAL / KEMBALI</button>
+        <button class="btn btn-cancel" onclick="window.close()">Batal / Kembali</button>
     </div>
 
 <script>
-    // Konfigurasi agar kamera lebih peka
-    const config = { 
-        fps: 20,           // Lebih tinggi biar lebih cepat nangkep
-        qrbox: { width: 250, height: 250 }, // Area kotak scan
-        aspectRatio: 1.0   // Kotak presisi
-    };
-
     const html5QrCode = new Html5Qrcode("reader");
-
-    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-        // Jika berhasil scan:
-        // 1. Beri feedback getar (jika HP dukung)
-        if (navigator.vibrate) navigator.vibrate(100);
-
-        // 2. Kirim data ke Google Apps Script Boss
-        window.opener.postMessage({
-            type: "HASIL_QR",
-            data: decodedText
-        }, "*");
-
-        // 3. Tutup scanner
-        html5QrCode.stop().then(() => {
-            window.close();
-        });
+    
+    // Konfigurasi TURBO
+    const config = { 
+        fps: 30, // Sangat cepat
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        disableFlip: false // Penting untuk beberapa HP Android
     };
 
-    // Mulai kamera belakang (environment)
-    html5QrCode.start(
-        { facingMode: "environment" }, 
-        config, 
-        qrCodeSuccessCallback
-    ).catch((err) => {
-        console.error("Gagal kamera: ", err);
-        alert("Kamera tidak diizinkan atau tidak ditemukan.");
-    });
+    const startScanner = () => {
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            (decodedText) => {
+                // Berhasil Scan
+                if (navigator.vibrate) navigator.vibrate(100);
+                
+                // Kirim data ke Window Utama
+                window.opener.postMessage({ type: "HASIL_QR", data: decodedText }, "*");
+                
+                // Stop & Close
+                html5QrCode.stop().then(() => { window.close(); });
+            }
+        ).catch(err => {
+            alert("Kamera Error: " + err);
+        });
+    }
+
+    // Jalankan otomatis
+    window.onload = startScanner;
 </script>
 </body>
 </html>
